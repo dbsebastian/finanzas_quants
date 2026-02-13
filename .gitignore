@@ -1,2 +1,5 @@
 .spyproject/
+.spyderproject
+.spyproject/
+.spyproject
 __pycache__/
