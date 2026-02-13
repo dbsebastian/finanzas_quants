@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
-
-
 # imports
 
 import numpy as np
@@ -14,17 +11,42 @@ import importlib
 import apoyo_var
 importlib.reload(apoyo_var)
 
-
+#################
 # inputs
+#################
 
-degrees_fr = 20
-size = 10**6
-distribucion_tipo = "chi" 
-# normal, student, exponencial, chi, uniforme
+# degrees_fr = 2
+#size = 10**6
 
+distribucion_tipo = "gamma" 
+# normal estandart, normal, student, exponencial, chi, uniforme, gamma
+
+
+# aca se generará el input, en una instancia de clase input
+inputs = apoyo_var.sim_input()
+
+inputs.tipo_distribucion = distribucion_tipo
+
+inputs.degree_f = 2 # degrees f en student y chi2
+inputs.scale = 5    # degrees f en exponencial
+inputs.mean = 5      # mean en normal
+inputs.std = 10     # std en normal
+
+
+inputs.shape = 5
+
+inputs.size = 10**6
+
+
+
+
+
+########################
+# calculos
+########################
 
 # Crea una instancia, con los inputs deseados
-simulacion_1 = apoyo_var.simulador(distribucion_tipo, size, degrees_fr) 
+simulacion_1 = apoyo_var.simulador(inputs) 
 
 
 # Genera el vector (con determinada distribución)

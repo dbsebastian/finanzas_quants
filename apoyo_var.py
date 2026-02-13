@@ -17,14 +17,30 @@ from scipy.stats import skew, kurtosis, chi2
 
 
 
-class simulador():
+
+class sim_input:
     
+    def __init__(self):
+        self.tipo_distribucion = None
+        self.size = None
+        self.degree_f = None
+        self.scale = None
+        self.mean = None
+        self.std = None
+        self.shape = None
+        
+
+
+class simulador:    
     # constructor
     # sólo lo usaré para declarar 
-    def __init__(self, tipo, size, degree_f, significancia=0.05):
-        self.tipo = tipo
-        self.size = size
-        self.df = degree_f
+    def __init__(self, inputs, significancia=0.05):
+        
+        self.inputs = inputs
+        self.tipo = inputs.tipo_distribucion
+        self.size = inputs.size
+        self.degree_f = inputs.degree_f
+        self.scale = inputs.scale
         self.sign = significancia
         # self.str_title = None
         # self.vector = None
@@ -52,18 +68,24 @@ class simulador():
         Devuelve un array de tamaño (size) y de distribución (tipo_distribución)
         """
         
-        if self.tipo =="normal":
+        if self.tipo =="normal estandart":
             self.vector = np.random.standard_normal(self.size)
+
+        elif self.tipo =="normal":
+            self.vector = np.random.normal(self.inputs.mean, self.inputs.std, self.size)            
             
         elif self.tipo == "student":
-            self.vector = np.random.standard_t(df=self.df, size=self.size)
+            self.vector = np.random.standard_t(df=self.degree_f, size=self.size)
             
         elif self.tipo == "exponencial":
-            self.vector = np.random.exponential(scale=self.df, size=self.size )       
+            self.vector = np.random.exponential(scale=self.scale, size=self.size )       
 
         elif self.tipo == "chi":
-            self.vector = np.random.chisquare(df=self.df, size=self.size )
-
+            self.vector = np.random.chisquare(df=self.degree_f, size=self.size )
+            
+        elif self.tipo == "gamma":
+            self.vector = np.random.gamma(shape=self.inputs.shape, scale=self.inputs.scale, size=self.size )
+            
         else:
             self.vector = np.random.uniform(low=-1 , high=1, size=self.size)
             
@@ -104,17 +126,24 @@ class simulador():
         if self.tipo == "normal":
             self.str_title = (f"Distribución tipo {self.tipo}")
         
+        elif self.tipo == "normal estandard":
+            self.str_title = (f"Distribución tipo {self.tipo}")
+        
         elif self.tipo == "student":
-            self.str_title = (f"Distribución tipo {self.tipo} con {self.df} grados de libertad")
+            self.str_title = (f"Distribución tipo {self.tipo} con {self.degree_f} grados de libertad")
         
         elif self.tipo == "exponencial":
-            self.str_title = (f"Distribución tipo {self.tipo} con coeficiente de {self.df}")
+            self.str_title = (f"Distribución tipo {self.tipo} con coeficiente de {self.scale}")
+        
+        if self.tipo == "gamma":
+            self.str_title = (f"Distribución tipo {self.tipo}, con un shape de {self.inputs.shape}")
             
         elif self.tipo == "chi":
-            self.str_title = (f"Distribución tipo {self.tipo}-cuadrado con {self.df} grados de libertad")
+            self.str_title = (f"Distribución tipo {self.tipo}-cuadrado con {self.degree_f} grados de libertad")
             
         else:
             self.str_title = (f"Distribución tipo {self.tipo}")
+        
         
         self.std_title = f' std = {str(np.round(self.x_std, 2))}'
         
