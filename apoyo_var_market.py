@@ -124,38 +124,38 @@ class simulador:
         self.str_title = ""
         
         if self.tipo == "normal":
-            self.str_title = (f"Distribución tipo {self.tipo}")
+            self.str_title = (f"{self.tipo}")
         
         elif self.tipo == "normal estandard":
-            self.str_title = (f"Distribución tipo {self.tipo}")
+            self.str_title = (f"{self.tipo}")
         
         elif self.tipo == "student":
-            self.str_title = (f"Distribución tipo {self.tipo} con {self.degree_f} grados de libertad")
+            self.str_title = (f"{self.tipo} con {self.degree_f} grados de libertad")
         
         elif self.tipo == "exponencial":
-            self.str_title = (f"Distribución tipo {self.tipo} con coeficiente de {self.scale}")
+            self.str_title = (f"{self.tipo} con coeficiente de {self.scale}")
         
         if self.tipo == "gamma":
-            self.str_title = (f"Distribución tipo {self.tipo}, con un shape de {self.inputs.shape}")
+            self.str_title = (f"{self.tipo}, con un shape de {self.inputs.shape}")
             
         elif self.tipo == "chi":
-            self.str_title = (f"Distribución tipo {self.tipo}-cuadrado con {self.degree_f} grados de libertad")
+            self.str_title = (f"{self.tipo}-cuadrado con {self.degree_f} grados de libertad")
             
         else:
-            self.str_title = (f"Distribución tipo {self.tipo}")
+            self.str_title = (f"{self.tipo}")
         
         
-        self.std_title = f' std = {str(np.round(self.x_std, 2))}'
+        self.std_title = f' std = {str(np.round(self.x_std, 4))}'
         
-        self.str_title += f'\n con media = {str(np.round(self.x_mean, 2))}  ; {self.std_title}'
+        self.str_title += f'\n con media = {str(np.round(self.x_mean, 3))}  ; {self.std_title}'
         
-        self.kurt_title = f' kurtosis = {str(np.round(self.x_kurt, 2))}'
+        self.kurt_title = f' kurtosis = {str(np.round(self.x_kurt, 3))}'
         
-        self.str_title += f'\n skew = {str(np.round(self.x_skew, 2))}  ; {self.kurt_title}'
+        self.str_title += f'\n skew = {str(np.round(self.x_skew, 3))}  ; {self.kurt_title}'
         
-        self.str_title += f"\n y con un P-Valor del Test JB de {np.round(self.p_valor, 4)},"
+        self.str_title += f"\n con un JB test de {np.round(self.test_jb, 4)}, con un P-Valor de {np.round(self.p_valor, 4)},"
         
-        self.str_title += f"\n dada una significancia de {self.sign}, la distribución es: {self.es_normal}"
+        self.str_title += f"\n la distribución es: {self.es_normal}"
 
         plt.hist(self.vector, color="g", alpha=0.5, bins=100)
         plt.title(self.str_title)
