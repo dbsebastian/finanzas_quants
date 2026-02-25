@@ -31,7 +31,7 @@ def load_timeseries(tick):
     t["close"]= raw_data["Close"]
     t = t.sort_values(by="date", ascending=True)
     t["close_previous"]= t["close"].shift(1)
-    t["return_close"]= t["close"]/t["close_previous"] - 1
+    t["return"]= t["close"]/t["close_previous"] - 1
     t= t.dropna()
     t = t.reset_index(drop=True)
     
@@ -39,6 +39,59 @@ def load_timeseries(tick):
 
 
 
+def sync_tickers_timeseries(benchmark, security):
+    """
+    A partir de un par de tickers devuelve una timeseries
+        con los dates sincronizados entre ambos.
+
+    Parameters
+    ----------
+    benchmark : str
+        ticker a ser cargado como Benchmark.
+    security : str
+        ticker a ser cargado como Security.
+
+    Returns
+    -------
+    ts : Dataframe
+        Devuelve una dataFrame, compuesta por el date y
+            los valores close y return de cada ticker.
+
+    """
+        
+    ts_x = load_timeseries(benchmark)
+    ts_y = load_timeseries(security)
+
+
+    timestamp_x = list(ts_x["date"].values)
+    timestamp_y = list(ts_y["date"].values)
+    timestamps = list( set(timestamp_x) & set(timestamp_y) )
+
+    ts_x = ts_x[ts_x["date"].isin(timestamps)]
+    ts_y = ts_y[ts_y["date"].isin(timestamps)]
+
+    ts_x = ts_x.sort_values(by="date", ascending=True)
+    ts_y = ts_y.sort_values(by="date", ascending=True)
+    ts_x = ts_x.reset_index(drop=True)
+    ts_y = ts_y.reset_index(drop=True)
+
+    ts = pd.DataFrame()
+    ts["date"] = ts_x["date"]
+    ts["close_x"] = ts_x["close"]
+    ts["close_y"] = ts_y["close"]
+    ts["return_x"] = ts_x["return"]
+    ts["return_y"] = ts_y["return"]
+    
+    return ts
+
+
+
+
+def sync_timeseries(ric_x, ric_y):
+    
+    def __init__(self):
+        self.ric_x = ric_x
+        self.ric_y = ric_y
 
 
 class distribution:    
@@ -62,6 +115,7 @@ class distribution:
         
         self.var_95 = None
         
+        self.crypto = ["BTC-USD", "ETH-USD", "SOL-USD", "USDC-USD", "USDT-USD", "DAI-USD"]
         self.mean_anual = None
         self.std_anual = None
         self.sharpe_ratio = None
@@ -75,7 +129,7 @@ class distribution:
         
         self.timeseries = load_timeseries(self.tick)
         
-        self.vector = self.timeseries["return_close"].values
+        self.vector = self.timeseries["return"].values
         self.size = len(self.vector)
         self.str_title = f"{self.tick} | Real Data"
     
@@ -94,16 +148,27 @@ class distribution:
     
     
     # vemos
-    def compute_stats(self, factor = 252):
+    def compute_stats(self):
         """
-        al anualizar, se utilizan por defecto factor= 252 días.
+        
         """
         self.mean = stats.tmean(self.vector)
-        self.mean_anual = stats.tmean(self.vector) * factor
-        self.median = np.median(self.vector)
-        self.std_anual = stats.tstd(self.vector) * np.sqrt(factor)
+        self.median = np.median(self.vector)        
         self.skew = stats.skew(self.vector)
         self.kurt = stats.kurtosis(self.vector)
+
+                
+        if "ReadMe" in self.tick:
+            pass
+            
+        elif self.tick in self.crypto:
+            self.mean_anual = stats.tmean(self.vector) * 365
+            self.std_anual = stats.tstd(self.vector) * np.sqrt(365)
+            
+        else:
+            self.mean_anual = stats.tmean(self.vector) * 252
+            self.std_anual = stats.tstd(self.vector) * np.sqrt(252)
+        
         
         # Sharpe ratio
         self.sharpe_ratio = self.mean_anual / self.std_anual if self.std_anual > 0 else 0.0
@@ -132,7 +197,14 @@ class distribution:
         """
         Crea el título del graph, en base al tipo de distribución creada.
         """
-        self.str_title = f"{self.tick}"
+        if "ReadMe" in self.tick:
+            pass
+            
+        elif self.tick in self.crypto:
+            self.str_title = f"{self.tick} - Anualizado a 365 días"
+            
+        else:
+            self.str_title = f"{self.tick} - Anualizado a 252 días"
         
         self.str_title += f'\n Media anual: {str(np.round(self.mean_anual, self.decimals))}  |  SD anual: {str(np.round(self.std_anual, self.decimals))}'
         
@@ -153,11 +225,6 @@ class distribution:
 
 
 
-    
-
-
-
-
 def computar_media_return_y_volatilidad(tick):
     
     """
@@ -174,6 +241,108 @@ def computar_media_return_y_volatilidad(tick):
     volatilidad = np.round(np.std(x, ddof=0), decimals)
 
     return average_return, volatilidad        
+
+
+
+class capm:
+    
+    # constructor
+    def __init__(self, benchmark, security, decimals= 5):
+        self.benchmark = benchmark
+        self.security = security
+        self.decimals = decimals
+        #
+        self.timeseries = None
+        #
+        self.x = None
+        self.y = None
+        self.alpha = None
+        self.beta = None
+        self.p_value = None
+        self.null_hyp = None
+        self.r_square = None
+        self.predict_y = None
+        #
+        
+    
+    def sync_timeseries(self):
+        self.timeseries = sync_tickers_timeseries(self.benchmark, self.security)
+    
+    
+    def plot_timesries(self):
+        plt.figure(figsize=(12,5))
+        plt.title(f'Timeserie de {self.security} y {self.benchmark}')
+        plt.ylabel("Precios")
+        plt.xlabel("Date")
+        #ejes
+        ax = plt.gca()
+        #sub ejes
+        ax1 = self.timeseries.plot(kind="line", x="date", y="close_x", ax=ax,
+                                   label=f"{self.benchmark}", color="blue",
+                                   alpha=0.8, grid=True,
+                                   )
+
+        ax2 = self.timeseries.plot(kind="line", x='date', y='close_y',
+                                   secondary_y=True, # eje secundario
+                                   ax=ax, label=f"{self.security}", color='red',
+                                   alpha =0.8,
+                                   )
+        ax1.legend(loc=2)
+        ax2.legend(loc=1)
+        plt.show()
+        
+    
+    def compute_regress(self):
+        
+        self.x = self.timeseries["return_x"].values
+        self.y = self.timeseries["return_y"].values
+        
+        beta, intercept, r2, pval, stderr = stats.linregress(self.x, self.y)
+        
+        self.alpha = np.round(intercept, self.decimals)
+        self.beta = np.round(beta, self.decimals)
+        self.p_value = np.round(pval, self.decimals)
+        self.null_hyp = pval > 0.05
+        self.r_square = np.round(r2, self.decimals)
+        
+        # regresion lineal graph
+        self.predict_y = self.alpha + self.beta * self.x
+
+
+    def plot_regress(self):        
+        
+        
+        plt.scatter(x=self.x, y=self.y, color="r", alpha=0.3) 
+        plt.plot(self.x, self.predict_y, color="b") 
+        
+        decimals = 4
+        
+        str_title = f"Scatterplot de Returns"
+        
+        str_title += f"\n Regresión lineal, dónde: Security: {self.security} y Benchmark: {self.benchmark} "
+        
+        str_title += f"\n Alpha: {np.round(self.alpha, decimals)} |  Beta: {np.round(self.beta, decimals)}"
+        
+        str_title += f"\n un P-value: {np.round(self.p_value, decimals)}, null hypotesis: {self.null_hyp}"
+        
+        str_title += f"\n y una Correlación: {np.round(self.r_square, decimals)}  y  R-square: {np.round(self.r_square**2, decimals)}"
+        
+        plt.title(str_title)
+        
+        plt.xlabel(self.benchmark)
+        plt.ylabel(self.security)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

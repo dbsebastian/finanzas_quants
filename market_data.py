@@ -71,3 +71,19 @@ distribucion.plot_histogram()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

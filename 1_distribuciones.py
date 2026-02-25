@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import skew, kurtosis, chi2
 import importlib
 
-import apoyo_var
-importlib.reload(apoyo_var)
+import apoyo_var_market
+importlib.reload(apoyo_var_market)
 
 #################
 # inputs
@@ -23,7 +23,7 @@ distribucion_tipo = "gamma"
 
 
 # aca se generará el input, en una instancia de clase input
-inputs = apoyo_var.sim_input()
+inputs = apoyo_var_market.sim_input()
 
 inputs.tipo_distribucion = distribucion_tipo
 
@@ -46,7 +46,7 @@ inputs.size = 10**6
 ########################
 
 # Crea una instancia, con los inputs deseados
-simulacion_1 = apoyo_var.simulador(inputs) 
+simulacion_1 = apoyo_var_market.simulador(inputs) 
 
 
 # Genera el vector (con determinada distribución)
