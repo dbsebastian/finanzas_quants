@@ -11,37 +11,38 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 import importlib
 
-import apoyo_var_market
-importlib.reload(apoyo_var_market)
+import sop_CAPM
+importlib.reload(sop_CAPM)
 
+
+# ----------------------
 # Inputs
+# ----------------------
 
-# x
-benchmark = "XLV"
-# es la variable x (independiente)
+# x (independiente)
+benchmark = "^SPX"
 
-
-# y
-security = "LLY"
-# es la variable y (dependiente)
+# y (dependiente)
+security = "MSFT"
 
 
+# ----------------------
 # CAPM
+# ----------------------
 
 # inicialización de la clase (creación de instancia)
-capm_1 = apoyo_var_market.capm(benchmark, security)
+modelo = sop_CAPM.model(benchmark, security)
 
 # Obtención de series de tiempo
-capm_1.sync_timeseries()
+modelo.sync_timeseries()
 
 # plot timeseries
-capm_1.plot_timesries()
-
+#modelo.plot_timesries()
 
 # Calculo de la regresion lineal
-capm_1.compute_regress()
-
+modelo.compute_regress()
 
 # PLot regresion
+modelo.plot_regress()
 
-capm_1.plot_regress()
+

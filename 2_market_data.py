@@ -19,43 +19,14 @@ import apoyo_var_market
 importlib.reload(apoyo_var_market)
 
 
-##########
-## path
-##########
+########################## Tick
 
-#os.getcwd()
-
-# tick_list = ["^SPX", "^SPY", "XLK", "XLV", "XLF", "BTC-USD"]
-
-
-    
-# ^SPX, ^SPY
-
-
-# XLK (sector tecnológico)
-# XLV (salud)
-# XLF (Financier"o)
-
-ticks_archivos = os.listdir("h:\\Cursos\\Quants_yt\\Datos")
-ticks_archivos
-
-
-
-
-
-
-
-
-
-
-########################## funciones
-
-ticker = "SPY"
+ticker = "MA"
 t = apoyo_var_market.load_timeseries(ticker)
 
 
 
-# computacion
+# Calculos
 distribucion = apoyo_var_market.distribution(ticker)
 
 distribucion.load_timeseries()
