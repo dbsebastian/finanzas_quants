@@ -23,7 +23,7 @@ importlib.reload(sop_CAPM)
 benchmark = "^SPX"
 
 # y (dependiente)
-security = "MSFT"
+security = "NVDA"
 
 
 # ----------------------

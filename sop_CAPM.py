@@ -149,9 +149,9 @@ class hedger:
     def compute_optimal_hedge(self):
         # computa cálculos usando algebra matricial
         dimension = len(self.hedge_securitiess)
-        if dimension != 2:
+        if dimension < 2:
             print("----------")
-            print("al no ser cuadrada, la matriz no tiene solución")
+            print("Debe ser de al menos 2 dimensiones")
             return
         
         # matriz cuadrada con todos elementos 1's

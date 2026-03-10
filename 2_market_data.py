@@ -21,7 +21,7 @@ importlib.reload(apoyo_var_market)
 
 ########################## Tick
 
-ticker = "MA"
+ticker = "NVDA"
 t = apoyo_var_market.load_timeseries(ticker)
 
 

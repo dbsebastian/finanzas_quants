@@ -11,20 +11,21 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import importlib
 
+
 import sop_CAPM
 importlib.reload(sop_CAPM)
 
 
 # inputs
 
-position_security = "GOOG"
-delta_usd = 15 # en mill
+position_security = "MSFT"
+delta_usd = 10 # en mill
 
 #
 benchmark = "^SPX"
 
 #
-hedge_securitiess = ["AAPL", "MSFT"]    # esto es de cobertura
+hedge_securitiess = ["NVDA", "SPY"]    # esto es de cobertura
 
 
 # inicializar hedge
