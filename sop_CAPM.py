@@ -12,13 +12,58 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import importlib
 
+import scipy.optimize as opt
+
 import sop_market_data
 importlib.reload(sop_market_data)
 
 
+def compute_beta(benchmark, security):
+    m = model(benchmark, security)
+    m.sync_timeseries()
+    m.compute_regress()
+    return m.beta
 
 
+def compute_corr(security_1, security_2):
+    m = model(security_1, security_2)
+    m.sync_timeseries()
+    m.compute_regress()
+    return m.r_square
 
+
+def dataframe_corr_beta(benchmark, position_security, hedge_universe):
+    decimals = 5
+    df = pd.DataFrame()
+    correlaciones = list()
+    betas = list()
+    for hedge_security in hedge_universe:
+        corr = compute_corr(position_security, hedge_security)
+        correlaciones.append(np.round(corr, decimals))
+        
+        betas_score = compute_beta(benchmark, hedge_security)
+        betas.append(np.round(betas_score , decimals))
+        
+    df["hedge_security"] = hedge_universe
+    df["correlations"] = correlaciones
+    df["betas"] = betas
+    df = df.sort_values(by="correlations", ascending=False)
+    return df
+
+# define la función a minimizar
+def cost_function_capm(x, betas, target_delta, target_beta, regularization):
+    dimensiones = len(x) # q' de dimensiones
+    # vector de 1s
+    deltas = np.ones([dimensiones])
+    # Crea la función delta, (parte del sistema de ecuación a optimizar) 
+    f_delta = (np.transpose(deltas).dot(x).item() + target_delta)**2
+    # crea la función beta, parte del sistema de ecuación a optimizar
+    f_beta = (np.transpose(betas).dot(x) + target_beta)**2
+    # por ahora sin función de regularización
+    f_penalty = regularization*(np.sum(x**2))    
+    f = f_delta + f_beta + f_penalty
+    
+    return f
 
 
 class model:
@@ -165,7 +210,11 @@ class hedger:
         
         # invierte la matriz_t y hace un producto matricial con la matriz de resultados
         #   Recordar que los resultados son los pesos que deben tenere las variables para que se dé la ecuacion
-        self.hedge_weights = np.linalg.inv(matriz_t).dot(targets)
+        if dimension ==2:
+            self.hedge_weights = np.linalg.inv(matriz_t).dot(targets)
+            
+        else:
+            self.hedge_weights = np.linalg.pinv(matriz_t).dot(targets)
         
         # suma las ponderaciones ( son la suma de S1 y S2)
         self.hedge_delta_usd = np.sum(self.hedge_weights)
@@ -173,19 +222,83 @@ class hedger:
         # producto matricial, de la traspuesta de los betas X las ponderaciones optimas
         self.hedge_beta_usd = np.transpose(self.hedge_betas).dot(self.hedge_weights).item()
         
+        # código que expone los valores obtenidos
         print("")
         print(f"{self.position_security}, beta: {self.posicion_beta}")
+        
+        #ticker_betas = list()
+        #betas_valores = list()
+        
+        print()
+        print("Los valores de beta originales:")
+        print()
+        for i in range(len(self.hedge_securitiess)):
+            print("---")
+            print(f"   {self.hedge_securitiess[i]} con beta: {self.hedge_betas[i]}")
+            print()
+        
+        print()
+        print("Los valores de beta minimos 'libres' óptimos:")
+        print()
+        for i in range(len(self.hedge_securitiess)):
+            print("---")
+            print(f"   {self.hedge_securitiess[i]} con beta: {self.hedge_weights[i]}")
+            print()
                 
-        print("")
-        print(f"{self.hedge_securitiess[0]}, beta: {self.hedge_betas[0]}")
-        print(f"{self.hedge_securitiess[1]}, beta: {self.hedge_betas[1]}")
-        
-        print("")
-        print(f"{self.hedge_securitiess[0]} optimal weight: {self.hedge_weights[0]}")
-        print(f"{self.hedge_securitiess[1]} optimal weight: {self.hedge_weights[1]}")
         
         
-    
+    def compute_hedge_weights(self, reg_param = 0):   
+        dimension = len(self.hedge_securitiess)
+        # inputs
+        # self.hedge_betas          →    son las betas de cada activo a usar como hedge
+        # self.posicion_delta_usd   →    $$ de la posición
+        # self.posicion_beta_usd    →    $$ en betas
+                
+        # Crea los valores de x, que serán usados para iterar la función
+        # target delta, es la posición en dolares inicial $$.
+        # al dividirla por la cantidad de betas, sabemos las "ponderación" aproximada de beta dolares en cada activo de hedge
+        x0 = - self.posicion_delta_usd /len(self.hedge_betas) * np.ones([len(self.hedge_betas), 1])
+        
+        # computando la optimización
+        # minimize toma la función
+        # los posibles valores que tendrá el dominio se indican mediante x0
+        # y los argumentos o variables a ser usadas en el sistema de ecuación se ingresan mediante args
+        optimal_result = opt.minimize(fun=cost_function_capm,
+                                      x0=x0.flatten(),
+                                      args=(self.hedge_betas,           \
+                                            self.posicion_delta_usd,    \
+                                            self.posicion_beta_usd,     \
+                                            reg_param )                 \
+                                          )
+        
+        self.hedge_weights_optimizados = optimal_result.x
+        # if dimension ==2:
+        #     self.hedge_weights = np.linalg.inv(matriz_t).dot(targets)
+            
+        # else:
+        #     self.hedge_weights = np.linalg.pinv(matriz_t).dot(targets)
+        
+        # suma las ponderaciones ( son la suma de S1 y S2)
+        self.hedge_delta_usd = np.sum(self.hedge_weights)
+        
+        # producto matricial, de la traspuesta de los betas X las ponderaciones optimas
+        self.hedge_beta_usd = np.transpose(self.hedge_betas).dot(self.hedge_weights).item()
+        
+        
+        print()
+        print()
+        print(f"Los pesos de Hedge que minimizan son:")
+        print(f"considerando una regularización de {reg_param}")
+        for i in range(len(self.hedge_weights_optimizados)):
+            print("---")
+            print(f"     {self.hedge_securitiess[i]} {self.hedge_weights_optimizados[i]}")
+            print()
+        print("--")
+        print(f"Dónde")
+        print(f"- Posición beta de:  {self.posicion_beta_usd}")
+        print(f"- Posición delta de: {self.posicion_delta_usd}")
+
+
 
 
 
